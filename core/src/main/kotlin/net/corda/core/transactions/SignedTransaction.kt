@@ -7,6 +7,7 @@ import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.crypto.DigitalSignature
 import net.corda.core.crypto.SecureHash
 import net.corda.core.crypto.isFulfilledBy
+import net.corda.core.flows.ResolvableTransactionData
 import net.corda.core.node.ServiceHub
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.serialization.SerializedBytes
@@ -32,8 +33,8 @@ import java.util.*
 // DOCSTART 1
 data class SignedTransaction(val txBits: SerializedBytes<WireTransaction>,
                              val sigs: List<DigitalSignature.WithKey>
-) : NamedByHash {
-// DOCEND 1
+) : NamedByHash, ResolvableTransactionData {
+    // DOCEND 1
     init {
         require(sigs.isNotEmpty())
     }
@@ -49,6 +50,8 @@ data class SignedTransaction(val txBits: SerializedBytes<WireTransaction>,
      * the user guide section "Transaction tear-offs" to learn more about Merkle trees.
      */
     override val id: SecureHash get() = tx.id
+
+    override val dependencies: Set<SecureHash> get() = tx.inputs.map { it.txhash }.toSet()
 
     @CordaSerializable
     class SignaturesMissingException(val missing: NonEmptySet<PublicKey>, val descriptions: List<String>, override val id: SecureHash)

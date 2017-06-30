@@ -28,7 +28,7 @@ abstract class AbstractStateReplacementFlow {
      * @param M the type of a class representing proposed modification by the instigator.
      */
     @CordaSerializable
-    data class Proposal<out M>(val stateRef: StateRef, val modification: M, val stx: SignedTransaction)
+    data class Proposal<out M>(val stateRef: StateRef, val modification: M, override val stx: SignedTransaction) : ResolvableTransactionData.Transaction
 
     /**
      * The assembled transaction for upgrading a contract.
@@ -107,8 +107,9 @@ abstract class AbstractStateReplacementFlow {
         @Suspendable
         private fun getParticipantSignature(party: Party, stx: SignedTransaction): DigitalSignature.WithKey {
             val proposal = Proposal(originalState.ref, modification, stx)
-            val response = sendAndReceive<DigitalSignature.WithKey>(party, proposal)
-            return response.unwrap {
+            // SendTransactionFlow allows otherParty to access our data to resolve the transaction.
+            subFlow(SendTransactionFlow(party, proposal))
+            return receive<DigitalSignature.WithKey>(party).unwrap {
                 check(party.owningKey.isFulfilledBy(it.by)) { "Not signed by the required participant" }
                 it.verify(stx.id)
                 it
@@ -141,7 +142,7 @@ abstract class AbstractStateReplacementFlow {
         @Throws(StateReplacementException::class)
         override fun call(): Void? {
             progressTracker.currentStep = VERIFYING
-            val maybeProposal: UntrustworthyData<Proposal<T>> = receive(otherSide)
+            val maybeProposal: UntrustworthyData<Proposal<T>> = receiveTransaction(otherSide, verifySignature = false)
             val stx: SignedTransaction = maybeProposal.unwrap {
                 verifyProposal(it)
                 verifyTx(it.stx)
@@ -154,7 +155,6 @@ abstract class AbstractStateReplacementFlow {
         @Suspendable
         private fun verifyTx(stx: SignedTransaction) {
             checkMySignatureRequired(stx.tx)
-            checkDependenciesValid(stx)
             // We expect stx to have insufficient signatures, so we convert the WireTransaction to the LedgerTransaction
             // here, thus bypassing the sufficient-signatures check.
             stx.tx.toLedgerTransaction(serviceHub).verify()
@@ -190,11 +190,6 @@ abstract class AbstractStateReplacementFlow {
             // TODO: use keys from the keyManagementService instead
             val myKey = serviceHub.myInfo.legalIdentity.owningKey
             require(myKey in tx.mustSign) { "Party is not a participant for any of the input states of transaction ${tx.id}" }
-        }
-
-        @Suspendable
-        private fun checkDependenciesValid(stx: SignedTransaction) {
-            subFlow(ResolveTransactionsFlow(stx.tx, otherSide))
         }
 
         private fun sign(stx: SignedTransaction): DigitalSignature.WithKey {

@@ -397,12 +397,12 @@ public class FlowCookbookJava {
             // dependencies, we'd need to download all of these dependencies
             // using``ResolveTransactionsFlow`` before verifying it.
             // DOCSTART 13
-            subFlow(new ResolveTransactionsFlow(twiceSignedTx, counterparty));
+            subFlow(new ResolveTransactionsFlow(counterparty, twiceSignedTx));
             // DOCEND 13
 
             // We can also resolve a `StateRef` dependency chain.
             // DOCSTART 14
-            subFlow(new ResolveTransactionsFlow(ImmutableSet.of(ourStateRef.getTxhash()), counterparty));
+            subFlow(new ResolveTransactionsFlow(counterparty, new ResolvableTransactionData.TransactionHashes(ImmutableSet.of(ourStateRef.getTxhash()))));
             // DOCEND 14
 
             // A ``SignedTransaction`` is a pairing of a ``WireTransaction``

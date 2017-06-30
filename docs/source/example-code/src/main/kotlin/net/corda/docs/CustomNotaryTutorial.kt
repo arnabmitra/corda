@@ -10,7 +10,6 @@ import net.corda.core.node.services.TimeWindowChecker
 import net.corda.core.node.services.TrustedAuthorityNotaryService
 import net.corda.core.transactions.LedgerTransaction
 import net.corda.core.transactions.SignedTransaction
-import net.corda.core.transactions.WireTransaction
 import net.corda.core.utilities.unwrap
 import net.corda.node.services.transactions.PersistentUniquenessProvider
 import net.corda.node.services.transactions.ValidatingNotaryService
@@ -44,45 +43,25 @@ class MyValidatingNotaryFlow(otherSide: Party, service: MyCustomValidatingNotary
      */
     @Suspendable
     override fun receiveAndVerifyTx(): TransactionParts {
-        val stx = receive<SignedTransaction>(otherSide).unwrap { it }
-        checkSignatures(stx)
-        val wtx = stx.tx
-        validateTransaction(wtx)
-        val ltx = validateTransaction(wtx)
-        processTransaction(ltx)
-
-        return TransactionParts(wtx.id, wtx.inputs, wtx.timeWindow)
-    }
-
-    fun processTransaction(ltx: LedgerTransaction) {
-        // Add custom transaction processing logic here
-    }
-
-    private fun checkSignatures(stx: SignedTransaction) {
         try {
-            stx.verifySignaturesExcept(serviceHub.myInfo.notaryIdentity.owningKey)
-        } catch(e: SignatureException) {
-            throw NotaryException(NotaryError.TransactionInvalid(e))
-        }
-    }
-
-    @Suspendable
-    fun validateTransaction(wtx: WireTransaction): LedgerTransaction {
-        try {
-            resolveTransaction(wtx)
-            val ltx = wtx.toLedgerTransaction(serviceHub)
-            ltx.verify()
-            return ltx
-        } catch (e: Exception) {
+            return receiveTransaction<SignedTransaction>(otherSide, verifySignature = false).unwrap {
+                it.verifySignaturesExcept(serviceHub.myInfo.notaryIdentity.owningKey)
+                val wtx = it.tx
+                val ltx = wtx.toLedgerTransaction(serviceHub).apply { verify() }
+                processTransaction(ltx)
+                TransactionParts(wtx.id, wtx.inputs, wtx.timeWindow)
+            }
+        } catch(e: Exception) {
             throw when (e) {
-                is TransactionVerificationException,
+                is TransactionVerificationException -> NotaryException(NotaryError.TransactionInvalid(e))
                 is SignatureException -> NotaryException(NotaryError.TransactionInvalid(e))
                 else -> e
             }
         }
     }
 
-    @Suspendable
-    private fun resolveTransaction(wtx: WireTransaction) = subFlow(ResolveTransactionsFlow(wtx, otherSide))
+    fun processTransaction(ltx: LedgerTransaction) {
+        // Add custom transaction processing logic here
+    }
 }
 // END 2

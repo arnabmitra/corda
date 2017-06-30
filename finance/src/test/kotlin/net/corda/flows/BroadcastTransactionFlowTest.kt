@@ -15,10 +15,9 @@ import kotlin.test.assertEquals
 
 @RunWith(JUnitQuickcheck::class)
 class BroadcastTransactionFlowTest {
-
     class NotifyTxRequestMessageGenerator : Generator<NotifyTxRequest>(NotifyTxRequest::class.java) {
         override fun generate(random: SourceOfRandomness, status: GenerationStatus): NotifyTxRequest {
-            return NotifyTxRequest(tx = SignedTransactionGenerator().generate(random, status))
+            return NotifyTxRequest(SignedTransactionGenerator().generate(random, status))
         }
     }
 

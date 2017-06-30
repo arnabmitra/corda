@@ -60,7 +60,7 @@ import java.security.PublicKey
 // TODO: AbstractStateReplacementFlow needs updating to use this flow.
 // TODO: Update this flow to handle randomly generated keys when that works is complete.
 class CollectSignaturesFlow(val partiallySignedTx: SignedTransaction,
-                            override val progressTracker: ProgressTracker = CollectSignaturesFlow.tracker()): FlowLogic<SignedTransaction>() {
+                            override val progressTracker: ProgressTracker = CollectSignaturesFlow.tracker()) : FlowLogic<SignedTransaction>() {
 
     companion object {
         object COLLECTING : ProgressTracker.Step("Collecting signatures from counter-parties.")
@@ -125,7 +125,9 @@ class CollectSignaturesFlow(val partiallySignedTx: SignedTransaction,
      * Get and check the required signature.
      */
     @Suspendable private fun collectSignature(counterparty: Party): DigitalSignature.WithKey {
-        return sendAndReceive<DigitalSignature.WithKey>(counterparty, partiallySignedTx).unwrap {
+        // SendTransactionFlow allows otherParty to access our data to resolve the transaction.
+        subFlow(SendTransactionFlow(counterparty, partiallySignedTx))
+        return receive<DigitalSignature.WithKey>(counterparty).unwrap {
             require(counterparty.owningKey.isFulfilledBy(it.by)) { "Not signed by the required Party." }
             it
         }
@@ -185,14 +187,13 @@ abstract class SignTransactionFlow(val otherParty: Party,
 
     @Suspendable override fun call(): SignedTransaction {
         progressTracker.currentStep = RECEIVING
-        val checkedProposal = receive<SignedTransaction>(otherParty).unwrap { proposal ->
+        // Receive transaction and resolve dependencies, check signatures is disabled as we don't have all signatures.
+        val checkedProposal = receiveTransaction<SignedTransaction>(otherParty, verifySignature = false).unwrap { proposal ->
             progressTracker.currentStep = VERIFYING
             // Check that the Responder actually needs to sign.
             checkMySignatureRequired(proposal)
             // Check the signatures which have already been provided. Usually the Initiators and possibly an Oracle's.
             checkSignatures(proposal)
-            // Resolve dependencies and verify, pass in the WireTransaction as we don't have all signatures.
-            subFlow(ResolveTransactionsFlow(proposal.tx, otherParty))
             proposal.tx.toLedgerTransaction(serviceHub).verify()
             // Perform some custom verification over the transaction.
             try {

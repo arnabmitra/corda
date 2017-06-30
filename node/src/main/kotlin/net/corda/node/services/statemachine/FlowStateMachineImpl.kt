@@ -220,14 +220,14 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     override fun checkFlowPermission(permissionName: String, extraAuditData: Map<String, String>) {
         val permissionGranted = true // TODO define permission control service on ServiceHubInternal and actually check authorization.
         val checkPermissionEvent = FlowPermissionAuditEvent(
-            serviceHub.clock.instant(),
-            flowInitiator,
-            "Flow Permission Required: $permissionName",
-            extraAuditData,
-            logic.javaClass,
-            id,
-            permissionName,
-            permissionGranted)
+                serviceHub.clock.instant(),
+                flowInitiator,
+                "Flow Permission Required: $permissionName",
+                extraAuditData,
+                logic.javaClass,
+                id,
+                permissionName,
+                permissionGranted)
         serviceHub.auditService.recordAuditEvent(checkPermissionEvent)
         if (!permissionGranted) {
             throw FlowPermissionException("User $flowInitiator not permissioned for $permissionName on flow $id")
@@ -235,13 +235,13 @@ class FlowStateMachineImpl<R>(override val id: StateMachineRunId,
     }
 
     // TODO Dummy implementation of access to application specific audit logging
-    override fun recordAuditEvent(eventType: String, comment: String, extraAuditData: Map<String,String>) {
+    override fun recordAuditEvent(eventType: String, comment: String, extraAuditData: Map<String, String>) {
         val flowAuditEvent = FlowAppAuditEvent(
-                    serviceHub.clock.instant(),
-                    flowInitiator,
-                    comment,
-                    extraAuditData,
-                    logic.javaClass,
+                serviceHub.clock.instant(),
+                flowInitiator,
+                comment,
+                extraAuditData,
+                logic.javaClass,
                 id,
                 eventType)
         serviceHub.auditService.recordAuditEvent(flowAuditEvent)
@@ -452,7 +452,7 @@ val Class<out FlowLogic<*>>.flowVersionAndInitiatingClass: Pair<Int, Class<out F
             found = annotation.version to (current as Class<out FlowLogic<*>>)
         }
         current = current.superclass
-            ?: return found
-            ?: throw IllegalArgumentException("$name as an initiating flow must be annotated with ${InitiatingFlow::class.java.name}")
+                ?: return found
+                ?: throw IllegalArgumentException("$name as an initiating flow must be annotated with ${InitiatingFlow::class.java.name}")
     }
 }

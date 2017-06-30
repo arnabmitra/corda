@@ -41,10 +41,18 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
     class HashNotFound(val requested: SecureHash) : FlowException()
 
     @CordaSerializable
-    data class Request(val hashes: List<SecureHash>)
+    data class Result<out T : NamedByHash>(val fromDisk: List<T>, val downloaded: List<T>)
 
     @CordaSerializable
-    data class Result<out T : NamedByHash>(val fromDisk: List<T>, val downloaded: List<T>)
+    interface Request
+
+    data class DataRequest(val hashes: List<SecureHash>, val dataType: DataType) : Request
+    object EndRequest : Request
+
+    @CordaSerializable
+    enum class DataType {
+        TRANSACTION, ATTACHMENT
+    }
 
     @Suspendable
     @Throws(HashNotFound::class)
@@ -52,7 +60,7 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
         // Load the items we have from disk and figure out which we're missing.
         val (fromDisk, toFetch) = loadWhatWeHave()
 
-        return if (toFetch.isEmpty()) {
+        val result = if (toFetch.isEmpty()) {
             Result(fromDisk, emptyList())
         } else {
             logger.info("Requesting ${toFetch.size} dependency(s) for verification from ${otherSide.name}")

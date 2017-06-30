@@ -7,6 +7,7 @@ import net.corda.core.flows.FlowLogic
 import net.corda.core.flows.NotaryException
 import net.corda.core.getOrThrow
 import net.corda.core.identity.Party
+import net.corda.core.flows.FetchDataFlow
 import net.corda.core.node.services.NotaryService
 import net.corda.core.node.services.TimeWindowChecker
 import net.corda.core.serialization.deserialize

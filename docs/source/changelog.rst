@@ -38,6 +38,9 @@ UNRELEASED
   overriden in order to handle cases where no single transaction participant is aware of all parties, and therefore
   the transaction must be relayed between participants rather than sent from a single node.
 
+* Data Vending service has been removed in this release to enhance data security. CorDapp developers should use the new
+  ``SendTransactionFlow`` in the flow logic to allow data access from their corresponding counter-flow.
+
 Milestone 13
 ------------
 
