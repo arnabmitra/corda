@@ -189,7 +189,7 @@ abstract class AbstractStateReplacementFlow {
         private fun checkMySignatureRequired(tx: WireTransaction) {
             // TODO: use keys from the keyManagementService instead
             val myKey = serviceHub.myInfo.legalIdentity.owningKey
-            require(myKey in tx.mustSign) { "Party is not a participant for any of the input states of transaction ${tx.id}" }
+            require(myKey in tx.requiredSigningKeys) { "Party is not a participant for any of the input states of transaction ${tx.id}" }
         }
 
         @Suspendable

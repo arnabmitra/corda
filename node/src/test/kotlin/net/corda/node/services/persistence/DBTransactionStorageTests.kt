@@ -147,7 +147,6 @@ class DBTransactionStorageTests {
                 outputs = emptyList(),
                 commands = emptyList(),
                 notary = DUMMY_NOTARY,
-                signers = emptyList(),
                 type = TransactionType.General,
                 timeWindow = null
         )
