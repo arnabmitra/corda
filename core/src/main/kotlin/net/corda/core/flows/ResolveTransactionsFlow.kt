@@ -170,24 +170,6 @@ class ResolveTransactionsFlow(private val otherSide: Party, private val transact
     }
 }
 
-/**
- * Receive and resolve transaction
- */
-@Suspendable
-fun <T : ResolvableTransactionData> FlowLogic<*>.receiveTransaction(clazz: Class<T>, otherSide: Party,
-                                                                    verifySignatures: Boolean = true,
-                                                                    verifyTransaction: Boolean = true): UntrustworthyData<T> {
-    return receive(clazz, otherSide).unwrap {
-        subFlow(ResolveTransactionsFlow(otherSide, it, verifySignatures, verifyTransaction))
-        UntrustworthyData(it)
-    }
-}
-
-inline fun <reified T : ResolvableTransactionData> FlowLogic<*>.receiveTransaction(otherSide: Party,
-                                                                                   verifySignature: Boolean = true,
-                                                                                   verifyTransaction: Boolean = true)
-        = receiveTransaction(T::class.java, otherSide, verifySignature, verifyTransaction)
-
 @CordaSerializable
 interface ResolvableTransactionData {
     val dependencies: Set<SecureHash>

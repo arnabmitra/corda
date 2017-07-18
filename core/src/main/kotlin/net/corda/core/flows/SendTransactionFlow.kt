@@ -5,14 +5,14 @@ import net.corda.core.identity.Party
 import net.corda.core.utilities.unwrap
 
 /**
- * The [SendTransactionFlow] corresponds to the [ResolveTransactionsFlow].
+ * The [SendTransactionFlow] corresponds to the [ReceiveTransactionFlow].
  *
  * The [SendTransactionFlow] provides an ad hoc data vending service, which anticipates incoming data request from the
  * [otherSide] during the transaction resolving process.
  *
- * The number of request from [ResolveTransactionsFlow] is depends on the depth of the transaction history and the data
- * [otherSide] already possess, which is unpredictable. The [SendTransactionFlow] is expected to receive [FetchDataFlow.Request]
- * continuously until the [otherSide] has all the data they need to resolve the transaction, an [FetchDataFlow.EndRequest] will be
+ * The number of request from [ReceiveTransactionFlow] is depends on the depth of the transaction history and the data
+ * [otherSide] already possess. The [SendTransactionFlow] is expected to receive [FetchDataFlow.Request] continuously
+ * until the [otherSide] has all the data they need to resolve the transaction, an [FetchDataFlow.Request.End] will be
  * sent from the [otherSide] to indicate end of data request.
  *
  * @param otherSide the target party.
