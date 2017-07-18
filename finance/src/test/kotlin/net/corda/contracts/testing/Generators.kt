@@ -83,7 +83,7 @@ class SignedTransactionGenerator : Generator<SignedTransaction>(SignedTransactio
     override fun generate(random: SourceOfRandomness, status: GenerationStatus): SignedTransaction {
         val wireTransaction = WiredTransactionGenerator().generate(random, status)
         return SignedTransaction(
-                txBits = wireTransaction.serialized,
+                transaction = wireTransaction,
                 sigs = listOf(NullSignature)
         )
     }

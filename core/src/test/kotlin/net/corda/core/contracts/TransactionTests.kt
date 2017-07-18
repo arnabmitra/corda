@@ -1,17 +1,16 @@
 package net.corda.core.contracts
 
 import net.corda.contracts.asset.DUMMY_CASH_ISSUER_KEY
-import net.corda.testing.contracts.DummyContract
-import net.corda.core.crypto.composite.CompositeKey
 import net.corda.core.crypto.SecureHash
+import net.corda.core.crypto.composite.CompositeKey
 import net.corda.core.crypto.generateKeyPair
 import net.corda.core.crypto.sign
 import net.corda.core.identity.Party
-import net.corda.core.serialization.SerializedBytes
 import net.corda.core.transactions.LedgerTransaction
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.WireTransaction
 import net.corda.testing.*
+import net.corda.testing.contracts.DummyContract
 import org.junit.Test
 import java.security.KeyPair
 import kotlin.test.assertEquals
@@ -19,9 +18,10 @@ import kotlin.test.assertFailsWith
 
 class TransactionTests {
 
-    private fun makeSigned(wtx: WireTransaction, vararg keys: KeyPair): SignedTransaction {
-        val bytes: SerializedBytes<WireTransaction> = wtx.serialized
-        return SignedTransaction(bytes, keys.map { it.sign(wtx.id.bytes) })
+    private fun makeSigned(wtx: WireTransaction, vararg keys: KeyPair, notarySig: Boolean = true): SignedTransaction {
+        val keySigs = keys.map { it.sign(wtx.id.bytes) }
+        val sigs = if (notarySig) keySigs + DUMMY_NOTARY_KEY.sign(wtx.id.bytes) else keySigs
+        return SignedTransaction(wtx, sigs)
     }
 
     @Test
@@ -70,7 +70,7 @@ class TransactionTests {
                 type = TransactionType.General,
                 timeWindow = null
         )
-        assertFailsWith<IllegalArgumentException> { makeSigned(wtx).verifyRequiredSignatures() }
+        assertFailsWith<IllegalArgumentException> { makeSigned(wtx, notarySig = false).verifyRequiredSignatures() }
 
         assertEquals(
                 setOf(DUMMY_KEY_1.public),
@@ -111,32 +111,25 @@ class TransactionTests {
                 TransactionType.General
         )
 
-        transaction.type.verify(transaction)
+        transaction.verify()
     }
 
     @Test
-    fun `transaction verification fails for duplicate inputs`() {
-        val baseOutState = TransactionState(DummyContract.SingleOwnerState(0, ALICE), DUMMY_NOTARY)
+    fun `transaction cannot have duplicate inputs`() {
         val stateRef = StateRef(SecureHash.randomSHA256(), 0)
-        val stateAndRef = StateAndRef(baseOutState, stateRef)
-        val inputs = listOf(stateAndRef, stateAndRef)
-        val outputs = listOf(baseOutState)
-        val commands = emptyList<AuthenticatedObject<CommandData>>()
-        val attachments = emptyList<Attachment>()
-        val id = SecureHash.randomSHA256()
-        val timeWindow: TimeWindow? = null
-        val transaction: LedgerTransaction = LedgerTransaction(
-                inputs,
-                outputs,
-                commands,
-                attachments,
-                id,
-                DUMMY_NOTARY,
-                timeWindow,
-                TransactionType.General
-        )
+        val buildTransaction = {
+            WireTransaction(
+                    inputs = listOf(stateRef, stateRef),
+                    attachments = emptyList(),
+                    outputs = emptyList(),
+                    commands = listOf(dummyCommand(DUMMY_KEY_1.public, DUMMY_KEY_2.public)),
+                    notary = DUMMY_NOTARY,
+                    type = TransactionType.General,
+                    timeWindow = null
+            )
+        }
 
-        assertFailsWith<TransactionVerificationException.DuplicateInputStates> { transaction.type.verify(transaction) }
+        assertFailsWith<IllegalStateException> { buildTransaction() }
     }
 
     @Test
@@ -150,17 +143,19 @@ class TransactionTests {
         val attachments = emptyList<Attachment>()
         val id = SecureHash.randomSHA256()
         val timeWindow: TimeWindow? = null
-        val transaction: LedgerTransaction = LedgerTransaction(
-                inputs,
-                outputs,
-                commands,
-                attachments,
-                id,
-                notary,
-                timeWindow,
-                TransactionType.General
-        )
+        val buildTransaction = {
+            LedgerTransaction(
+                    inputs,
+                    outputs,
+                    commands,
+                    attachments,
+                    id,
+                    notary,
+                    timeWindow,
+                    TransactionType.General
+            )
+        }
 
-        assertFailsWith<TransactionVerificationException.NotaryChangeInWrongTransactionType> { transaction.type.verify(transaction) }
+        assertFailsWith<TransactionVerificationException.NotaryChangeInWrongTransactionType> { buildTransaction() }
     }
 }

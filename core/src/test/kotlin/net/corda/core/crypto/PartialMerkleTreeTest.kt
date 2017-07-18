@@ -6,12 +6,10 @@ import net.corda.contracts.asset.Cash
 import net.corda.core.contracts.*
 import net.corda.core.crypto.SecureHash.Companion.zeroHash
 import net.corda.core.identity.Party
+import net.corda.core.serialization.deserialize
 import net.corda.core.serialization.p2PKryo
 import net.corda.core.serialization.serialize
 import net.corda.core.transactions.WireTransaction
-import net.corda.testing.DUMMY_NOTARY
-import net.corda.testing.DUMMY_PUBKEY_1
-import net.corda.testing.TEST_TX_TIME
 import net.corda.testing.*
 import org.junit.Test
 import java.security.PublicKey
@@ -107,7 +105,7 @@ class PartialMerkleTreeTest {
 
         val mt = testTx.buildFilteredTransaction(Predicate(::filtering))
         val leaves = mt.filteredLeaves
-        val d = WireTransaction.deserialize(testTx.serialized)
+        val d = testTx.serialize().deserialize()
         assertEquals(testTx.id, d.id)
         assertEquals(1, leaves.commands.size)
         assertEquals(1, leaves.outputs.size)
@@ -162,6 +160,7 @@ class PartialMerkleTreeTest {
         val inclHashes = arrayListOf(hashed[3], hashed[5], hashed[3], hashed[5])
         assertFailsWith<MerkleTreeException> { PartialMerkleTree.build(merkleTree, inclHashes) }
     }
+
 
     @Test
     fun `build Partial Merkle Tree - only duplicate leaves, less included failure`() {
