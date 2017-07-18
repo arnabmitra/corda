@@ -151,8 +151,8 @@ class TwoPartyTradeFlowTests {
             bobNode.disableDBCloseOnStop()
 
             val cashStates = bobNode.database.transaction {
-                bobNode.services.fillWithSomeTestCash(2000.DOLLARS, notaryNode.info.notaryIdentity, 3, 3)
-            }
+                    bobNode.services.fillWithSomeTestCash(2000.DOLLARS, notaryNode.info.notaryIdentity, 3, 3)
+                }
 
             val alicesFakePaper = aliceNode.database.transaction {
                 fillUpForSeller(false, cpIssuer, aliceNode.info.legalIdentity,
