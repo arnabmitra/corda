@@ -16,8 +16,6 @@ import kotlin.collections.LinkedHashSet
 // TODO: It may be a clearer API if we make the primary c'tor private here, and only allow a single tx to be "resolved".
 
 /**
- * The [ResolveTransactionsFlow] corresponds to the [SendTransactionFlow].
- *
  * This flow is used to verify the validity of a transaction by recursively checking the validity of all the
  * dependencies. Once a transaction is checked it's inserted into local storage so it can be relayed and won't be
  * checked again.
