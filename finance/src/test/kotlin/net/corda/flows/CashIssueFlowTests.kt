@@ -5,6 +5,7 @@ import net.corda.core.contracts.DOLLARS
 import net.corda.core.contracts.`issued by`
 import net.corda.core.getOrThrow
 import net.corda.core.identity.Party
+import net.corda.core.transactions.outputsOfType
 import net.corda.core.utilities.OpaqueBytes
 import net.corda.testing.node.InMemoryMessagingNetwork.ServicePeerAllocationStrategy.RoundRobin
 import net.corda.testing.node.MockNetwork
@@ -47,7 +48,7 @@ class CashIssueFlowTests {
                 notary)).resultFuture
         mockNet.runNetwork()
         val issueTx = future.getOrThrow().stx
-        val output = issueTx.tx.outputs.single().data as Cash.State
+        val output = issueTx.tx.outputsOfType<Cash.State>().single()
         assertEquals(expected.`issued by`(bankOfCorda.ref(ref)), output.amount)
     }
 

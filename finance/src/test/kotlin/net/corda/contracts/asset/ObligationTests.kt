@@ -139,7 +139,7 @@ class ObligationTests {
                 beneficiary = CHARLIE,
                 template = megaCorpDollarSettlement
         )
-        assertEquals(tx.outputs[0].data, expected)
+        assertEquals(tx.getOutput(0), expected)
         assertTrue(tx.commands[0].value is Obligation.Commands.Issue)
         assertEquals(MINI_CORP_PUBKEY, tx.commands[0].signers[0])
 
@@ -239,7 +239,7 @@ class ObligationTests {
         }.toWireTransaction()
         assertEquals(1, tx.outputs.size)
 
-        val actual = tx.outputs[0].data
+        val actual = tx.getOutput(0)
         assertEquals((1000000.DOLLARS `issued by` defaultIssuer).OBLIGATION between Pair(ALICE, BOB), actual)
     }
 
@@ -264,7 +264,7 @@ class ObligationTests {
         }.toWireTransaction()
         assertEquals(1, tx.outputs.size)
         val expected = obligationBobToAlice.copy(quantity = obligationBobToAlice.quantity - obligationAliceToBob.quantity)
-        val actual = tx.outputs[0].data
+        val actual = tx.getOutput(0)
         assertEquals(expected, actual)
     }
 
@@ -291,7 +291,7 @@ class ObligationTests {
         stx = notaryServices.addSignature(ptx)
 
         assertEquals(1, stx.tx.outputs.size)
-        assertEquals(stateAndRef.state.data.copy(lifecycle = Lifecycle.DEFAULTED), stx.tx.outputs[0].data)
+        assertEquals(stateAndRef.state.data.copy(lifecycle = Lifecycle.DEFAULTED), stx.tx.getOutput(0))
         stx.verifyRequiredSignatures()
 
         // And set it back
@@ -302,7 +302,7 @@ class ObligationTests {
         ptx = miniCorpServices.signInitialTransaction(tx)
         stx = notaryServices.addSignature(ptx)
         assertEquals(1, stx.tx.outputs.size)
-        assertEquals(stateAndRef.state.data.copy(lifecycle = Lifecycle.NORMAL), stx.tx.outputs[0].data)
+        assertEquals(stateAndRef.state.data.copy(lifecycle = Lifecycle.NORMAL), stx.tx.getOutput(0))
         stx.verifyRequiredSignatures()
     }
 

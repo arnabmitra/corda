@@ -316,7 +316,7 @@ class AttachmentClassLoaderTests {
             val copiedWireTransaction = bytes.deserialize(kryo2)
 
             assertEquals(1, copiedWireTransaction.outputs.size)
-            val contract2 = copiedWireTransaction.outputs[0].data.contract as DummyContractBackdoor
+            val contract2 = copiedWireTransaction.getOutput(0).contract as DummyContractBackdoor
             assertEquals(42, contract2.inspectState(copiedWireTransaction.outputs[0].data))
         }
     }

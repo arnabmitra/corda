@@ -7,6 +7,7 @@ import net.corda.core.contracts.requireThat
 import net.corda.core.getOrThrow
 import net.corda.core.identity.Party
 import net.corda.core.transactions.SignedTransaction
+import net.corda.core.transactions.outputsOfType
 import net.corda.core.utilities.unwrap
 import net.corda.testing.MINI_CORP_KEY
 import net.corda.testing.contracts.DummyContract
@@ -61,9 +62,10 @@ class CollectSignaturesFlowTests {
                 val flow = object : SignTransactionFlow(otherParty) {
                     @Suspendable override fun checkTransaction(stx: SignedTransaction) = requireThat {
                         val tx = stx.tx
+                        val ltx = tx.toLedgerTransaction(serviceHub)
                         "There should only be one output state" using (tx.outputs.size == 1)
                         "There should only be one output state" using (tx.inputs.isEmpty())
-                        val magicNumberState = tx.outputs.single().data as DummyContract.MultiOwnerState
+                        val magicNumberState = ltx.outputsOfType<DummyContract.MultiOwnerState>().single()
                         "Must be 1337 or greater" using (magicNumberState.magicNumber >= 1337)
                     }
                 }
@@ -118,9 +120,10 @@ class CollectSignaturesFlowTests {
                 val flow = object : SignTransactionFlow(otherParty) {
                     @Suspendable override fun checkTransaction(stx: SignedTransaction) = requireThat {
                         val tx = stx.tx
+                        val ltx = tx.toLedgerTransaction(serviceHub)
                         "There should only be one output state" using (tx.outputs.size == 1)
                         "There should only be one output state" using (tx.inputs.isEmpty())
-                        val magicNumberState = tx.outputs.single().data as DummyContract.MultiOwnerState
+                        val magicNumberState = ltx.outputsOfType<DummyContract.MultiOwnerState>().single()
                         "Must be 1337 or greater" using (magicNumberState.magicNumber >= 1337)
                     }
                 }

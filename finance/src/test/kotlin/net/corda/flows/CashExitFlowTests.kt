@@ -5,6 +5,7 @@ import net.corda.core.contracts.DOLLARS
 import net.corda.core.contracts.`issued by`
 import net.corda.core.getOrThrow
 import net.corda.core.identity.Party
+import net.corda.core.transactions.outputsOfType
 import net.corda.core.utilities.OpaqueBytes
 import net.corda.testing.node.InMemoryMessagingNetwork.ServicePeerAllocationStrategy.RoundRobin
 import net.corda.testing.node.MockNetwork
@@ -55,7 +56,7 @@ class CashExitFlowTests {
         val expected = (initialBalance - exitAmount).`issued by`(bankOfCorda.ref(ref))
         assertEquals(1, exitTx.inputs.size)
         assertEquals(1, exitTx.outputs.size)
-        val output = exitTx.outputs.map { it.data }.filterIsInstance<Cash.State>().single()
+        val output = exitTx.outputsOfType<Cash.State>().single()
         assertEquals(expected, output.amount)
     }
 
