@@ -35,7 +35,6 @@ class ResolveTransactionsFlow(private val otherSide: Party, private val transact
     constructor(otherSide: Party, transactionData: ResolvableTransactionData) : this(otherSide, transactionData, true, true)
 
     companion object {
-        private fun dependencyIDs(wtx: WireTransaction) = wtx.inputs.map { it.txhash }.toSet()
         /**
          * Topologically sorts the given transactions such that dependencies are listed before dependers. */
         @JvmStatic
@@ -88,7 +87,7 @@ class ResolveTransactionsFlow(private val otherSide: Party, private val transact
         // Start fetching data.
         val newTxns = downloadDependencies(transactionData.dependencies)
         fetchMissingAttachments(newTxns.flatMap { it.tx.attachments } + (wtx?.attachments ?: emptyList()))
-        send(otherSide, FetchDataFlow.EndRequest)
+        send(otherSide, FetchDataFlow.Request.End)
         // Finish fetching data.
 
         val result = topologicalSort(newTxns).map {

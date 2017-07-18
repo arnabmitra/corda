@@ -30,7 +30,7 @@ import java.util.*
 abstract class FetchDataFlow<T : NamedByHash, W : Any>(
         protected val requests: Set<SecureHash>,
         protected val otherSide: Party,
-        protected val wrapperType: Class<W>) : FlowLogic<FetchDataFlow.Result<T>>() {
+        protected val dataType: DataType) : FlowLogic<FetchDataFlow.Result<T>>() {
 
     @CordaSerializable
     class DownloadedVsRequestedDataMismatch(val requested: SecureHash, val got: SecureHash) : IllegalArgumentException()
@@ -44,10 +44,11 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
     data class Result<out T : NamedByHash>(val fromDisk: List<T>, val downloaded: List<T>)
 
     @CordaSerializable
-    interface Request
+    sealed class Request {
+        data class Data(val hashes: List<SecureHash>, val dataType: DataType) : Request()
+        object End : Request()
+    }
 
-    data class DataRequest(val hashes: List<SecureHash>, val dataType: DataType) : Request
-    object EndRequest : Request
 
     @CordaSerializable
     enum class DataType {
@@ -60,7 +61,7 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
         // Load the items we have from disk and figure out which we're missing.
         val (fromDisk, toFetch) = loadWhatWeHave()
 
-        val result = if (toFetch.isEmpty()) {
+        return if (toFetch.isEmpty()) {
             Result(fromDisk, emptyList())
         } else {
             logger.info("Requesting ${toFetch.size} dependency(s) for verification from ${otherSide.name}")
@@ -73,11 +74,10 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
             // Above that, we start losing authentication data on the message fragments and take exceptions in the
             // network layer.
             val maybeItems = ArrayList<W>(toFetch.size)
-            send(otherSide, Request(toFetch))
             for (hash in toFetch) {
                 // We skip the validation here (with unwrap { it }) because we will do it below in validateFetchResponse.
                 // The only thing checked is the object type. It is a protocol violation to send results out of order.
-                maybeItems += receive(wrapperType, otherSide).unwrap { it }
+                maybeItems += sendAndReceive<List<W>>(otherSide, Request.Data(listOf(hash), dataType)).unwrap {it}
             }
             // Check for a buggy/malicious peer answering with something that we didn't ask for.
             val downloaded = validateFetchResponse(UntrustworthyData(maybeItems), toFetch)

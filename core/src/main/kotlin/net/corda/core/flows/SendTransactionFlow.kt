@@ -23,7 +23,7 @@ open class SendTransactionFlow(protected val otherSide: Party, protected val dat
     protected open fun sendPayloadAndReceiveDataRequest(payload: Any?) = payload?.let { sendAndReceive<FetchDataFlow.Request>(otherSide, payload) } ?: receive<FetchDataFlow.Request>(otherSide)
 
     @Suspendable
-    protected open fun verifyDataRequest(dataRequest: FetchDataFlow.DataRequest) {
+    protected open fun verifyDataRequest(dataRequest: FetchDataFlow.Request.Data) {
         // TODO: Verify request is relevant to the transaction.
     }
 
@@ -37,14 +37,13 @@ open class SendTransactionFlow(protected val otherSide: Party, protected val dat
         while (true) {
             val dataRequest = sendPayloadAndReceiveDataRequest(payload).unwrap { request ->
                 when (request) {
-                    is FetchDataFlow.DataRequest -> {
+                    is FetchDataFlow.Request.Data -> {
                         // Verify request.
                         if (request.hashes.isEmpty()) throw FlowException("Empty hash list")
                         verifyDataRequest(request)
                         request
                     }
-                    FetchDataFlow.EndRequest -> return
-                    else -> throw FlowException("Unsupported Fetch Data Request : $request")
+                    FetchDataFlow.Request.End -> return
                 }
             }
             payload = when (dataRequest.dataType) {

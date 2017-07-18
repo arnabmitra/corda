@@ -18,33 +18,8 @@ import net.corda.core.transactions.SignedTransaction
  * results in a [FetchDataFlow.HashNotFound] exception. Note that returned transactions are not inserted into
  * the database, because it's up to the caller to actually verify the transactions are valid.
  */
-@InitiatingFlow
 class FetchTransactionsFlow(requests: Set<SecureHash>, otherSide: Party) :
-        FetchDataFlow<SignedTransaction, SignedTransaction>(requests, otherSide, SignedTransaction::class.java) {
+        FetchDataFlow<SignedTransaction, SignedTransaction>(requests, otherSide, DataType.TRANSACTION) {
 
     override fun load(txid: SecureHash): SignedTransaction? = serviceHub.validatedTransactions.getTransaction(txid)
-}
-
-/**
- * Given a set of hashes either loads from from local storage  or requests them from the other peer. Downloaded
- * attachments are saved to local storage automatically.
- */
-class FetchAttachmentsFlow(requests: Set<SecureHash>, otherSide: Party) : FetchDataFlow<Attachment, ByteArray>(requests, otherSide, ByteArray::class.java) {
-    override fun load(txid: SecureHash): Attachment? = serviceHub.attachments.openAttachment(txid)
-    override fun convert(wire: ByteArray): Attachment = FetchedAttachment({ wire })
-    override fun maybeWriteToDisk(downloaded: List<Attachment>) {
-        for (attachment in downloaded) {
-            serviceHub.attachments.importAttachment(attachment.open())
-        }
-    }
-
-    private class FetchedAttachment(dataLoader: () -> ByteArray) : AbstractAttachment(dataLoader), SerializeAsToken {
-        override val id: SecureHash by lazy { attachmentData.sha256() }
-
-        private class Token(private val id: SecureHash) : SerializationToken {
-            override fun fromToken(context: SerializeAsTokenContext) = FetchedAttachment(context.attachmentDataLoader(id))
-        }
-
-        override fun toToken(context: SerializeAsTokenContext) = Token(id)
-    }
 }

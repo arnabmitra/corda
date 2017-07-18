@@ -136,7 +136,7 @@ class AttachmentSerializationTest {
         @Suspendable
         override fun getAttachmentContent(): String {
             val (downloadedAttachment) = subFlow(FetchAttachmentsFlow(setOf(attachmentId), server)).downloaded
-            send(server, FetchDataFlow.EndRequest)
+            send(server, FetchDataFlow.Request.End)
             communicate()
             return downloadedAttachment.extractContent()
         }

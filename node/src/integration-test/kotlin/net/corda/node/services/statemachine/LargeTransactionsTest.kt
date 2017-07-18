@@ -34,7 +34,7 @@ class LargeTransactionsTest {
                     .addAttachment(hash4)
             val stx = serviceHub.signInitialTransaction(tx, serviceHub.legalIdentityKey)
             // Send to the other side and wait for it to trigger resolution from us.
-            sendAndReceive<Unit>(serviceHub.networkMapCache.getNodeByLegalName(BOB.name)!!.legalIdentity, stx)
+            subFlow(SendTransactionFlow(serviceHub.networkMapCache.getNodeByLegalName(BOB.name)!!.legalIdentity, stx))
         }
     }
 
@@ -42,8 +42,7 @@ class LargeTransactionsTest {
     class ReceiveLargeTransactionFlow(private val counterParty: Party) : FlowLogic<Unit>() {
         @Suspendable
         override fun call() {
-            val stx = receive<SignedTransaction>(counterParty).unwrap { it }
-            subFlow(ResolveTransactionsFlow(stx, counterParty))
+            receiveTransaction<SignedTransaction>(counterParty).unwrap { it }
             // Unblock the other side by sending some dummy object (Unit is fine here as it's a singleton).
             send(counterParty, Unit)
         }
