@@ -192,7 +192,7 @@ abstract class SignTransactionFlow(val otherParty: Party,
             // Check the signatures which have already been provided. Usually the Initiators and possibly an Oracle's.
             checkSignatures(proposal)
             // Resolve dependencies and verify, pass in the WireTransaction as we don't have all signatures.
-            subFlow(ResolveTransactionsFlow(proposal.tx, otherParty))
+            subFlow(ResolveTransactionsFlow(proposal, otherParty))
             proposal.tx.toLedgerTransaction(serviceHub).verify()
             // Perform some custom verification over the transaction.
             try {

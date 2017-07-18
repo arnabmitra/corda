@@ -11,6 +11,7 @@ import net.corda.core.contracts.*
 import net.corda.core.crypto.*
 import net.corda.core.crypto.composite.CompositeKey
 import net.corda.core.identity.Party
+import net.corda.core.transactions.NotaryChangeWireTransaction
 import net.corda.core.transactions.WireTransaction
 import net.corda.core.utilities.LazyPool
 import net.corda.core.utilities.OpaqueBytes
@@ -43,6 +44,7 @@ import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.isAccessible
 import kotlin.reflect.jvm.javaType
 
 /**
@@ -117,10 +119,6 @@ fun <T : Any> ByteArray.deserialize(kryo: Kryo): T = deserialize(kryo.asPool())
 fun <T : Any> OpaqueBytes.deserialize(kryo: KryoPool = p2PKryo()): T {
     return this.bytes.deserialize(kryo)
 }
-
-// The more specific deserialize version results in the bytes being cached, which is faster.
-@JvmName("SerializedBytesWireTransaction")
-fun SerializedBytes<WireTransaction>.deserialize(kryo: KryoPool = p2PKryo()): WireTransaction = WireTransaction.deserialize(this, kryo)
 
 fun <T : Any> SerializedBytes<T>.deserialize(kryo: KryoPool = if (internalOnly) storageKryo() else p2PKryo()): T = bytes.deserialize(kryo)
 
@@ -200,6 +198,7 @@ class ImmutableClassSerializer<T : Any>(val klass: KClass<T>) : Serializer<T>() 
         output.writeInt(hashParameters(constructor.parameters))
         for (param in constructor.parameters) {
             val kProperty = propsByName[param.name!!]!!
+            kProperty.isAccessible = true
             when (param.type.javaType.typeName) {
                 "int" -> output.writeVarInt(kProperty.get(obj) as Int, true)
                 "long" -> output.writeVarLong(kProperty.get(obj) as Long, true)
@@ -361,11 +360,29 @@ object WireTransactionSerializer : Serializer<WireTransaction>() {
     }
 }
 
+@ThreadSafe
+object NotaryChangeWireTransactionSerializer : Serializer<NotaryChangeWireTransaction>() {
+    override fun write(kryo: Kryo, output: Output, obj: NotaryChangeWireTransaction) {
+        kryo.writeClassAndObject(output, obj.inputs)
+        kryo.writeClassAndObject(output, obj.notary)
+        kryo.writeClassAndObject(output, obj.newNotary)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun read(kryo: Kryo, input: Input, type: Class<NotaryChangeWireTransaction>): NotaryChangeWireTransaction {
+        val inputs = kryo.readClassAndObject(input) as List<StateRef>
+        val notary = kryo.readClassAndObject(input) as Party
+        val newNotary = kryo.readClassAndObject(input) as Party
+
+        return NotaryChangeWireTransaction(inputs, notary, newNotary)
+    }
+}
+
 /** For serialising an ed25519 private key */
 @ThreadSafe
 object Ed25519PrivateKeySerializer : Serializer<EdDSAPrivateKey>() {
     override fun write(kryo: Kryo, output: Output, obj: EdDSAPrivateKey) {
-        check(obj.params == Crypto.EDDSA_ED25519_SHA512.algSpec )
+        check(obj.params == Crypto.EDDSA_ED25519_SHA512.algSpec)
         output.writeBytesWithLength(obj.seed)
     }
 
