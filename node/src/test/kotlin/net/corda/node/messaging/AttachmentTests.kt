@@ -161,6 +161,6 @@ class AttachmentTests {
     @InitiatedBy(InitiatingFetchAttachmentsFlow::class)
     private class FetchAttachmentsResponse(val otherSide: Party) : FlowLogic<Unit>() {
         @Suspendable
-        override fun call() = subFlow(SendTransactionFlow(otherSide, null))
+        override fun call() = sendTransaction(otherSide, null)
     }
 }

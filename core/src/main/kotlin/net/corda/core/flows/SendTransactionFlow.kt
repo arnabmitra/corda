@@ -57,3 +57,6 @@ open class SendTransactionFlow(protected val otherSide: Party, protected val dat
         }
     }
 }
+
+// Convenient method for Kotlin.
+fun FlowLogic<*>.sendTransaction(otherSide: Party, data: ResolvableTransactionData?) = subFlow(SendTransactionFlow(otherSide, data))

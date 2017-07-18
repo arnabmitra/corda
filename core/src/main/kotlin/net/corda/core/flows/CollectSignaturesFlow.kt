@@ -126,7 +126,7 @@ class CollectSignaturesFlow(val partiallySignedTx: SignedTransaction,
      */
     @Suspendable private fun collectSignature(counterparty: Party): DigitalSignature.WithKey {
         // SendTransactionFlow allows otherParty to access our data to resolve the transaction.
-        subFlow(SendTransactionFlow(counterparty, partiallySignedTx))
+        sendTransaction(counterparty, partiallySignedTx)
         return receive<DigitalSignature.WithKey>(counterparty).unwrap {
             require(counterparty.owningKey.isFulfilledBy(it.by)) { "Not signed by the required Party." }
             it

@@ -84,7 +84,7 @@ class AttachmentSerializationTest {
         @Suspendable
         override fun call() {
             if (sendData) {
-                subFlow(SendTransactionFlow(client, null))
+                sendTransaction(client, null)
             }
             receive<String>(client).unwrap { assertEquals("ping one", it) }
             sendAndReceive<String>(client, "pong").unwrap { assertEquals("ping two", it) }

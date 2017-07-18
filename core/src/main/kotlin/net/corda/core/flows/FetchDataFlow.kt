@@ -49,7 +49,6 @@ abstract class FetchDataFlow<T : NamedByHash, W : Any>(
         object End : Request()
     }
 
-
     @CordaSerializable
     enum class DataType {
         TRANSACTION, ATTACHMENT

@@ -203,6 +203,6 @@ class ResolveTransactionsFlowTest {
     @InitiatedBy(TestFlow::class)
     private class TestResponseFlow(val otherSide: Party) : FlowLogic<Unit>() {
         @Suspendable
-        override fun call() = subFlow(SendTransactionFlow(otherSide, null))
+        override fun call() = sendTransaction(otherSide, null)
     }
 }
