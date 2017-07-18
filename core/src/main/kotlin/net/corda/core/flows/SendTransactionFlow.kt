@@ -2,6 +2,7 @@ package net.corda.core.flows
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.core.identity.Party
+import net.corda.core.utilities.UntrustworthyData
 import net.corda.core.utilities.unwrap
 
 /**
@@ -58,5 +59,10 @@ open class SendTransactionFlow(protected val otherSide: Party, protected val dat
     }
 }
 
-// Convenient method for Kotlin.
+// Convenient methods for Kotlin.
 fun FlowLogic<*>.sendTransaction(otherSide: Party, data: ResolvableTransactionData?) = subFlow(SendTransactionFlow(otherSide, data))
+
+inline fun <reified T : Any> FlowLogic<*>.sendTransactionAndReceive(otherSide: Party, data: ResolvableTransactionData?): UntrustworthyData<T> {
+    subFlow(SendTransactionFlow(otherSide, data))
+    return receive(otherSide)
+}
