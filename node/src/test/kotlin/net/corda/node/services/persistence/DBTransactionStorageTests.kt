@@ -151,6 +151,6 @@ class DBTransactionStorageTests {
                 type = TransactionType.General,
                 timeWindow = null
         )
-        return SignedTransaction(wtx.serialized, listOf(DigitalSignature.WithKey(NullPublicKey, ByteArray(1))))
+        return SignedTransaction(wtx, listOf(DigitalSignature.WithKey(NullPublicKey, ByteArray(1))))
     }
 }

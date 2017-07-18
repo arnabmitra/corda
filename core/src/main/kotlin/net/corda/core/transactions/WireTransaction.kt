@@ -1,6 +1,5 @@
 package net.corda.core.transactions
 
-import com.esotericsoftware.kryo.pool.KryoPool
 import net.corda.core.contracts.*
 import net.corda.core.crypto.DigitalSignature
 import net.corda.core.crypto.MerkleTree
@@ -8,21 +7,16 @@ import net.corda.core.crypto.SecureHash
 import net.corda.core.crypto.keys
 import net.corda.core.identity.Party
 import net.corda.core.indexOfOrThrow
-import net.corda.core.node.ServicesForResolution
-import net.corda.core.serialization.SerializedBytes
-import net.corda.core.serialization.deserialize
-import net.corda.core.serialization.p2PKryo
-import net.corda.core.serialization.serialize
 import net.corda.core.internal.Emoji
+import net.corda.core.node.ServicesForResolution
 import java.security.PublicKey
 import java.security.SignatureException
 import java.util.function.Predicate
 
 /**
  * A transaction ready for serialisation, without any signatures attached. A WireTransaction is usually wrapped
- * by a [SignedTransaction] that carries the signatures over this payload. The hash of the wire transaction is
- * the identity of the transaction, that is, it's possible for two [SignedTransaction]s with different sets of
- * signatures to have the same identity hash.
+ * by a [SignedTransaction] that carries the signatures over this payload.
+ * The identity of the transaction is the Merkle tree root of its components (see [MerkleTree]).
  */
 class WireTransaction(
         /** Pointers to the input states on the ledger, identified by (tx identity hash, output index). */
@@ -41,19 +35,8 @@ class WireTransaction(
         checkInvariants()
     }
 
-    // Cache the serialised form of the transaction and its hash to give us fast access to it.
-    @Volatile @Transient private var cachedBytes: SerializedBytes<WireTransaction>? = null
-    val serialized: SerializedBytes<WireTransaction> get() = cachedBytes ?: serialize().apply { cachedBytes = this }
-
+    /** The transaction id is represented by the root hash of Merkle tree over the transaction components. */
     override val id: SecureHash by lazy { merkleTree.hash }
-
-    companion object {
-        fun deserialize(data: SerializedBytes<WireTransaction>, kryo: KryoPool = p2PKryo()): WireTransaction {
-            val wtx = data.bytes.deserialize<WireTransaction>(kryo)
-            wtx.cachedBytes = data
-            return wtx
-        }
-    }
 
     /** Returns a [StateAndRef] for the given output index. */
     @Suppress("UNCHECKED_CAST")

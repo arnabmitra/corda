@@ -20,8 +20,7 @@ import kotlin.test.assertFailsWith
 class TransactionTests {
 
     private fun makeSigned(wtx: WireTransaction, vararg keys: KeyPair): SignedTransaction {
-        val bytes: SerializedBytes<WireTransaction> = wtx.serialized
-        return SignedTransaction(bytes, keys.map { it.sign(wtx.id.bytes) })
+        return SignedTransaction(wtx, keys.map { it.sign(wtx.id.bytes) })
     }
 
     @Test

@@ -11,6 +11,7 @@ import net.corda.core.contracts.*
 import net.corda.core.crypto.*
 import net.corda.core.crypto.composite.CompositeKey
 import net.corda.core.identity.Party
+import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.WireTransaction
 import net.corda.core.internal.LazyPool
 import net.corda.core.utilities.OpaqueBytes
@@ -117,10 +118,6 @@ fun <T : Any> ByteArray.deserialize(kryo: Kryo): T = deserialize(kryo.asPool())
 fun <T : Any> OpaqueBytes.deserialize(kryo: KryoPool = p2PKryo()): T {
     return this.bytes.deserialize(kryo)
 }
-
-// The more specific deserialize version results in the bytes being cached, which is faster.
-@JvmName("SerializedBytesWireTransaction")
-fun SerializedBytes<WireTransaction>.deserialize(kryo: KryoPool = p2PKryo()): WireTransaction = WireTransaction.deserialize(this, kryo)
 
 fun <T : Any> SerializedBytes<T>.deserialize(kryo: KryoPool = if (internalOnly) storageKryo() else p2PKryo()): T = bytes.deserialize(kryo)
 
@@ -363,11 +360,27 @@ object WireTransactionSerializer : Serializer<WireTransaction>() {
     }
 }
 
+@ThreadSafe
+object SignedTransactionSerializer : Serializer<SignedTransaction>() {
+    override fun write(kryo: Kryo, output: Output, obj: SignedTransaction) {
+        kryo.writeClassAndObject(output, obj.txBits)
+        kryo.writeClassAndObject(output, obj.sigs)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    override fun read(kryo: Kryo, input: Input, type: Class<SignedTransaction>): SignedTransaction {
+        return SignedTransaction(
+                kryo.readClassAndObject(input) as SerializedBytes<WireTransaction>,
+                kryo.readClassAndObject(input) as List<DigitalSignature.WithKey>
+        )
+    }
+}
+
 /** For serialising an ed25519 private key */
 @ThreadSafe
 object Ed25519PrivateKeySerializer : Serializer<EdDSAPrivateKey>() {
     override fun write(kryo: Kryo, output: Output, obj: EdDSAPrivateKey) {
-        check(obj.params == Crypto.EDDSA_ED25519_SHA512.algSpec )
+        check(obj.params == Crypto.EDDSA_ED25519_SHA512.algSpec)
         output.writeBytesWithLength(obj.seed)
     }
 
