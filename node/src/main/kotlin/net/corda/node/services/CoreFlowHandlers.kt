@@ -10,7 +10,6 @@ import net.corda.core.identity.AnonymousPartyAndPath
 import net.corda.core.identity.Party
 import net.corda.core.utilities.ProgressTracker
 import net.corda.core.utilities.unwrap
-import net.corda.flows.AnonymisedIdentity
 
 // TODO: We should have a whitelist of contracts we're willing to accept at all, and reject if the transaction
 //       includes us in any outside that list. Potentially just if it includes any outside that list at all.
@@ -81,6 +80,7 @@ class ContractUpgradeHandler(otherSide: Party) : AbstractStateReplacementFlow.Ac
 
 class TransactionKeyHandler(val otherSide: Party, val revocationEnabled: Boolean) : FlowLogic<Unit>() {
     constructor(otherSide: Party) : this(otherSide, false)
+
     companion object {
         object SENDING_KEY : ProgressTracker.Step("Sending key")
     }
