@@ -60,8 +60,10 @@ open class SendTransactionFlow(protected val otherSide: Party, protected val dat
 }
 
 // Convenient methods for Kotlin.
+@Suspendable
 fun FlowLogic<*>.sendTransaction(otherSide: Party, data: ResolvableTransactionData?) = subFlow(SendTransactionFlow(otherSide, data))
 
+@Suspendable
 inline fun <reified T : Any> FlowLogic<*>.sendTransactionAndReceive(otherSide: Party, data: ResolvableTransactionData?): UntrustworthyData<T> {
     subFlow(SendTransactionFlow(otherSide, data))
     return receive(otherSide)
